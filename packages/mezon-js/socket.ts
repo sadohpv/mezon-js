@@ -68,6 +68,7 @@ import { Session } from "./session";
 import { WebSocketAdapter, WebSocketAdapterText } from "./web_socket_adapter";
 import { mapToCamelCase, mapToSnakeCase, safeJSONParse } from "./utils";
 import {
+  decodeReactions,
   decodeMentions,
   decodeAttachments,
   decodeRefs,
@@ -1342,7 +1343,10 @@ function createChannelMessageFromEvent(message: any) {
     console.log("content is invalid", e);
   }
   try {
-    reactions = safeJSONParse(message.channel_message.reactions);
+    reactions =
+      (decodeReactions(message.channel_message.reactions)
+        ?.reactions as unknown as ApiMessageReaction[]) ||
+      safeJSONParse(message.channel_message.reactions);
   } catch (e) {
     console.log("reactions is invalid", e);
   }
@@ -1399,8 +1403,6 @@ function createChannelMessageFromEvent(message: any) {
     references: references,
     hideEditted: message.channel_message.hide_editted,
     isPublic: message.channel_message.is_public,
-    createTime: message.channel_message.create_time,
-    updateTime: message.channel_message.update_time,
     createTimeSeconds: message.channel_message.create_time_seconds,
     updateTimeSeconds: message.channel_message.update_time_seconds,
     topicId: message.channel_message.topic_id,
@@ -1468,8 +1470,8 @@ export interface Socket {
     messageId: string,
     hasAttachment?: boolean,
     topicId?: string,
-    mentions?: string,
-    references?: string
+    mentions?: Uint8Array,
+    references?: Uint8Array
   ): Promise<ChannelMessageAck>;
 
   /** Execute an RPC function to the server. */
@@ -1968,6 +1970,7 @@ export class DefaultSocket implements Socket {
       /** Inbound message from server. */
       if (!message.cid) {
         if (message.notifications) {
+          console.log("Received notifications: %o", message.notifications);
           message.notifications.notifications.forEach((n: ApiNotification) => {
             n.content = n.content ? safeJSONParse(n.content) : undefined;
             this.onnotification(n);
@@ -2030,10 +2033,7 @@ export class DefaultSocket implements Socket {
           this.onstreamdata(mapToCamelCase(<StreamData>message.stream_data));
         } else if (message.channel_message) {
           const channelMessage = createChannelMessageFromEvent(message);
-          console.log("channelMessage", channelMessage);
-          const newMessage = mapToCamelCase(channelMessage);
-          console.log("newMessage", newMessage);
-          this.onchannelmessage(newMessage);
+          this.onchannelmessage(channelMessage);
         } else if (message.message_typing_event) {
           this.onmessagetyping(
             mapToCamelCase(<MessageTypingEvent>message.message_typing_event)
@@ -2871,8 +2871,8 @@ export class DefaultSocket implements Socket {
     messageId: string,
     hasAttachment?: boolean,
     topicId?: string,
-    mentions?: string,
-    references?: string
+    mentions?: Uint8Array,
+    references?: Uint8Array
   ): Promise<ChannelMessageAck> {
     const response = await this.send({
       channel_message_remove: {
@@ -2923,18 +2923,18 @@ export class DefaultSocket implements Socket {
   ): Promise<ChannelMessageAck> {
     const response = await this.send({
       channel_message_update: {
-        clanId: clanId,
-        channelId: channelId,
-        messageId: messageId,
+        clan_id: clanId,
+        channel_id: channelId,
+        message_id: messageId,
         content: content,
         mentions: mapToSnakeCase(mentions),
         attachments: mapToSnakeCase(attachments),
         mode: mode,
-        isPublic: isPublic,
-        hideEditted: hideEditted,
-        topicId: topicId,
-        isUpdateMsgTopic: isUpdateMsgTopic,
-        oldMentions: oldMentions,
+        is_public: isPublic,
+        hide_editted: hideEditted,
+        topic_id: topicId,
+        is_update_msg_topic: isUpdateMsgTopic,
+        old_mentions: oldMentions,
       },
     });
     return mapToCamelCase(response.channel_message_ack);
@@ -3081,19 +3081,19 @@ export class DefaultSocket implements Socket {
     const response = await this.send({
       message_reaction_event: {
         id: id,
-        clanId: clanId,
-        channelId: channelId,
+        clan_id: clanId,
+        channel_id: channelId,
         mode: mode,
-        isPublic: isPublic,
-        messageId: messageId,
-        emojiId: emojiId,
+        is_public: isPublic,
+        message_id: messageId,
+        emoji_id: emojiId,
         emoji: emoji,
         count: count,
-        messageSenderId: messageSenderId,
+        message_sender_id: messageSenderId,
         action: action_delete,
-        topicId: topicId,
-        emojiRecentId: emojiRecentId,
-        senderName: senderName,
+        topic_id: topicId,
+        emoji_recent_id: emojiRecentId,
+        sender_name: senderName,
       },
     });
     return mapToCamelCase(response.message_reaction_event);
@@ -3331,7 +3331,7 @@ export class DefaultSocket implements Socket {
 
   async listDataSocket(request: ListDataSocket): Promise<any> {
     const response = await this.send({
-      list_data_socket: mapToSnakeCase(request),
+      list_data_socket: request,
     });
     return mapToCamelCase(response.list_data_socket);
   }

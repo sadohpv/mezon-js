@@ -20,7 +20,6 @@ syntax = "proto3";
 package mezon.api;
 
 import "google/protobuf/struct.proto";
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 option go_package = "mezon/v2/common/api";
@@ -40,9 +39,9 @@ message Account {
   // The qr code in the user's account.
   string qr_code = 3;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the user's email was verified.
-  google.protobuf.Timestamp verify_time = 4;
+  uint32 verify_time_seconds = 4;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the user's account was disabled/banned.
-  google.protobuf.Timestamp disable_time = 5;
+  uint32 disable_time_seconds = 5;
   // Logo url
   string logo = 6;
   // Splash screen url
@@ -152,44 +151,40 @@ message ChannelMessage {
   string avatar = 7;
   // The content payload.
   string content = 8;
-  // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the message was created.
-  google.protobuf.Timestamp create_time = 9;
-  // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the message was last updated.
-  google.protobuf.Timestamp update_time = 10;
   // The name of the chat room, or an empty string if this message was not sent through a chat room.
-  string channel_label = 11;
+  string channel_label = 9;
   // The clan logo
-  string clan_logo = 12;
+  string clan_logo = 10;
   // The category name
-  string category_name = 13;
+  string category_name = 11;
   // The clan nick name
-  string display_name = 14;
+  string display_name = 12;
   // The clan nick name
-  string clan_nick = 15;
+  string clan_nick = 13;
   // The clan avatar
-  string clan_avatar = 16;
+  string clan_avatar = 14;
   // Emoji reaction
-	string reactions = 17;
+	bytes reactions = 15;
   // Message mention
-  string mentions = 18;
+  bytes mentions = 16;
   // Message attachment
-  string attachments = 19;
+  bytes attachments = 17;
   // Message reference
-  string references = 20;
+  bytes references = 18;
   // referenced message
-  string referenced_message = 21;
+  bytes referenced_message = 19;
   // create time in ms
-  uint32 create_time_seconds = 22;
+  uint32 create_time_seconds = 20;
   // update time in ms
-  uint32 update_time_seconds = 23;
+  uint32 update_time_seconds = 21;
   // channel mode
-  int32 mode = 24;
+  int32 mode = 22;
   // hide editted
-  bool hide_editted = 25;
+  bool hide_editted = 23;
   // is public
-  bool is_public = 26;
+  bool is_public = 24;
   // topic
-  string topic_id = 27;
+  string topic_id = 25;
 }
 
 // Mention to message
@@ -205,7 +200,7 @@ message MessageMention {
   // role name
   string rolename = 5;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the message was created.
-  google.protobuf.Timestamp create_time = 6;
+  uint32 create_time_seconds = 6;
   // start position from text
   int32 s = 7;
   // end position from text
@@ -381,7 +376,7 @@ message Event {
   // Arbitrary event property values.
   map<string, string> properties = 2;
   // The time when the event was triggered.
-  google.protobuf.Timestamp timestamp = 3;
+  uint32 timestamp_seconds = 3;
   // True if the event came directly from a client call, false otherwise.
   bool external = 4;
 }
@@ -405,7 +400,7 @@ message Friend {
   // The friend status.
   int32 state = 2; // one of "Friend.State".
   // Time of the latest relationship update.
-  google.protobuf.Timestamp update_time = 3;
+  uint32 update_time_seconds = 3;
   // source id
   string source_id = 4;
 }
@@ -492,8 +487,8 @@ message ChannelAttachment {
   string url = 5;
   // uploader
   string uploader = 6;
-  // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the group was created.
-  google.protobuf.Timestamp create_time = 7;
+  // timestamp
+  uint32 create_time_seconds = 7;
   // message id.
   string message_id = 8;
   // width
@@ -631,9 +626,9 @@ message ListChannelAttachmentRequest {
   // The channel type
   string file_type = 3;
   // Max number of records to return. Between 1 and 100.
-  google.protobuf.Int32Value limit = 4;
+  int32 limit = 4;
   // The group user state to list.
-  google.protobuf.Int32Value state = 5;
+  int32 state = 5;
   // An optional previous id for page.
   uint32 before = 6;
   // An optional next id for page.
@@ -681,13 +676,13 @@ message Notification {
   // Subject of the notification.
   string subject = 2;
   // Content of the notification in JSON.
-  string content = 3;
+  bytes content = 3;
   // Category code for this notification.
   int32 code = 4;
   // ID of the sender, if a user. Otherwise 'null'.
   string sender_id = 5;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the notification was created.
-  google.protobuf.Timestamp create_time = 6;
+  uint32 create_time_seconds = 6;
   // True if this notification was persisted to the database.
   bool persistent = 7;
   // ID of clan
@@ -713,7 +708,7 @@ message EmojiRecent {
   //
   string emoji_id = 2;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the emoji was created.
-  google.protobuf.Timestamp update_time = 3;
+  uint32 update_time_seconds = 3;
 }
 
 // A collection of zero or more notifications.
@@ -795,7 +790,7 @@ message UpdateAccountRequest {
   // update about me
   google.protobuf.StringValue about_me = 6;
   // date of birth
-  google.protobuf.Timestamp dob = 7;
+  uint32 dob_seconds = 7;
   // logo url
   google.protobuf.StringValue logo = 8;
   // splash screen
@@ -854,17 +849,17 @@ message User {
   // Number of related edges to this user.
   int32 edge_count = 11;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the user was created.
-  google.protobuf.Timestamp create_time = 12;
+  uint32 create_time_seconds = 12;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the user was last updated.
-  google.protobuf.Timestamp update_time = 13;
+  uint32 update_time_seconds = 13;
   // About me
   string about_me = 14;
   // Join time
-  google.protobuf.Timestamp join_time = 15;
+  uint32 join_time_seconds = 15;
   // Platform
   bool is_mobile = 16;
   // dob
-  google.protobuf.Timestamp dob = 17;
+  uint32 dob_seconds = 17;
   // Mezone id
   string mezon_id = 18;
   // list clan nick name
@@ -1077,7 +1072,7 @@ message InviteUserRes {
   // check user exist
   bool user_joined = 5;
   // expiry_time
-  google.protobuf.Timestamp expiry_time = 6;
+  uint32 expiry_time_seconds = 6;
   //
   api.ChannelDescription channel_desc = 7;
   string clan_logo = 8;
@@ -1103,9 +1098,9 @@ message LinkInviteUser {
   // link invite
   string invite_link = 4;
   // create time
-  google.protobuf.Timestamp create_time = 5;
+  uint32 create_time_seconds = 5;
   // expiry time
-  google.protobuf.Timestamp expiry_time = 6;
+  uint32 expiry_time_seconds = 6;
   string id = 7;
 }
 
@@ -1216,14 +1211,6 @@ message ChannelMessageHeader {
   string sender_id = 3;
   // the content
   string content = 4;
-  // the attachment
-  string attachment = 5;
-  // the reference
-  string reference = 6;
-  // the mention
-  string mention = 7;
-  // the reactions
-  string reaction = 8;
 }
 
 // Channel description record
@@ -1362,7 +1349,7 @@ message CreateChannelDescRequest {
   // The category of channel
   string category_id = 4;
   // The channel type.
-  google.protobuf.Int32Value type = 5;
+  int32 type = 5;
   // The channel lable
   string channel_label = 6;
   // The channel private
@@ -1520,10 +1507,10 @@ message EventManagement {
   string clan_id = 8;
   string channel_voice_id = 9;
   string address = 10;
-  google.protobuf.Timestamp start_time = 11;
-  google.protobuf.Timestamp end_time = 12;
+  uint32 start_time_seconds = 11;
+  uint32 end_time_seconds = 12;
   repeated string user_ids = 13;
-  google.protobuf.Timestamp create_time = 14;
+  uint32 create_time_seconds = 14;
   int32 max_permission = 15;
   string channel_id = 16;
   int32 event_status = 17;
@@ -1581,11 +1568,9 @@ message PinMessage {
   //
   string avatar = 7;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the message was created.
-  google.protobuf.Timestamp create_time = 8;
-  // create time in ms
-  uint32 create_time_seconds = 9;
+  uint32 create_time_seconds = 8;
   // attachment
-  string attachment = 10;
+  bytes attachment = 9;
 }
 
 message PinMessagesList {
@@ -1599,7 +1584,7 @@ message NotificationUserChannel {
   //
   int32 notification_setting_type = 2;
   //
-  google.protobuf.Timestamp time_mute = 3;
+  uint32 time_mute_seconds = 3;
   //
   int32 active = 4;
   //
@@ -1833,8 +1818,8 @@ message CreateEventRequest {
   string clan_id = 4;
   string channel_voice_id = 5;
   string address = 6;
-  google.protobuf.Timestamp start_time = 7;
-  google.protobuf.Timestamp end_time = 8;
+  uint32 start_time_seconds = 7;
+  uint32 end_time_seconds = 8;
   string event_id = 9;
   int32 event_status = 10;
   string channel_id = 11;
@@ -1854,8 +1839,8 @@ message UpdateEventRequest {
   string event_id = 4;
   string channel_id = 5;
   string address = 6;
-  google.protobuf.Timestamp start_time = 7;
-  google.protobuf.Timestamp end_time = 8;
+  uint32 start_time_seconds = 7;
+  uint32 end_time_seconds = 8;
   string clan_id = 9;
   string creator_id = 10;
   string channel_voice_id = 11;
@@ -2100,7 +2085,7 @@ message ClanSticker {
   string shortname = 3;
   string category = 4;
   string creator_id = 5;
-  google.protobuf.Timestamp create_time = 6;
+  uint32 create_time_seconds = 6;
   string clan_id = 7;
   string logo = 8;
   string clan_name = 9;
@@ -2277,9 +2262,9 @@ message App {
   // status online
   bool is_shadow = 5;
   // The UNIX time when the app was disabled.
-  google.protobuf.Timestamp disable_time = 6;
+  uint32 disable_time_seconds = 6;
   // The UNIX time when the app was created
-  google.protobuf.Timestamp create_time = 7;
+  uint32 create_time_seconds = 7;
   // string token
   string token = 8;
   // role
@@ -2374,7 +2359,7 @@ message AppClan {
 // Delete channel messages by timestamp or/and ids.
 message DeleteChannelMessagesRequest {
   // Timestamp before which messages will be deleted.
-  google.protobuf.Timestamp before = 1;
+  uint32 before_seconds = 1;
   // IDs of the messages to delete.
   repeated string ids = 2;
 }
@@ -2742,8 +2727,8 @@ message ChannelCanvasItem {
   // creator
   string creator_id = 5;
   //
-  google.protobuf.Timestamp update_time = 6;
-  google.protobuf.Timestamp create_time = 7;
+  uint32 update_time_seconds = 6;
+  uint32 create_time_seconds = 7;
 }
 
 message ChannelCanvasListResponse {
@@ -2808,8 +2793,8 @@ message UserActivity {
   string activity_name = 2;
   int32 activity_type = 3;
   string activity_description = 4;
-  google.protobuf.Timestamp start_time = 5;
-  google.protobuf.Timestamp end_time = 6;
+  uint32 start_time_seconds = 5;
+  uint32 end_time_seconds = 6;
   string application_id = 7;
   int32 status = 8;
 }
@@ -2822,7 +2807,7 @@ message CreateActivityRequest {
   string activity_name = 1;
   int32 activity_type = 2;
   string activity_description = 3;
-  google.protobuf.Timestamp start_time = 4;
+  uint32 start_time_seconds = 4;
   string application_id = 5;
   int32 status = 6;
 }
@@ -2833,7 +2818,7 @@ message LoginIDResponse {
   // status login
   int32 status = 2;
   // create time
-  int64 create_time_second = 3;
+  int64 create_time_seconds = 3;
   // platform
   string platform = 4;
   // user_id
@@ -2895,7 +2880,7 @@ message AuditLog{
   string entity_name = 5;
   string entity_id = 6;
   string details = 7;
-  google.protobuf.Timestamp time_log = 8;
+  uint32 time_log_seconds = 8;
   string channel_id = 9;
   string channel_label = 10;
 }
@@ -2976,9 +2961,9 @@ message OnboardingItem {
   // answers
   repeated OnboardingAnswer answers = 9;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the message was created.
-  google.protobuf.Timestamp create_time = 10;
+  uint32 create_time_seconds = 10;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the message was last updated.
-  google.protobuf.Timestamp update_time = 11;
+  uint32 update_time_seconds = 11;
 }
 
 
@@ -3180,9 +3165,9 @@ message SdTopic {
   string clan_id = 4;
   string channel_id = 5;
   int32 status = 6;
-  google.protobuf.Timestamp create_time = 7;
-  google.protobuf.Timestamp update_time = 8;
-  ChannelMessage message = 9;
+  uint32 create_time_seconds = 7;
+  uint32 update_time_seconds = 8;
+  string content = 9;
   ChannelMessageHeader last_sent_message = 10;
 }
 
@@ -3257,7 +3242,7 @@ message MezonOauthClient {
   int32 client_secret_expires_at = 13;
   string client_uri = 14;
   repeated string contacts = 15;
-  google.protobuf.Timestamp created_at = 16;
+  uint32 created_at_seconds = 16;
   bool frontchannel_logout_session_required = 17;
   string frontchannel_logout_uri = 18;
   repeated string grant_types = 19;
@@ -3287,7 +3272,7 @@ message MezonOauthClient {
   string token_endpoint_auth_method = 43;
   string token_endpoint_auth_signing_alg = 44;
   string tos_uri = 45;
-  google.protobuf.Timestamp updated_at = 46;
+  uint32 updated_at_seconds = 46;
   string userinfo_signed_response_alg = 47;
 }
 
@@ -3320,10 +3305,10 @@ message Message2InboxRequest {
   string clan_id = 3;
   string avatar = 4;
   string content = 5;
-  string mentions = 6;
-  string attachments = 7;
-  string reactions = 8;
-  string references = 9;
+  bytes mentions = 6;
+  bytes attachments = 7;
+  bytes reactions = 8;
+  bytes references = 9;
 }
 
 // Send an email with password to the server. Used with authenticate/link/unlink.
@@ -3419,11 +3404,11 @@ message LogedDeviceList {
 message LogedDevice {
   string device_id = 1;
   string device_name = 2;
-  google.protobuf.Timestamp login_at = 3;
+  uint32 login_at_seconds = 3;
   int32 status = 4;
   string platform = 5;
   string ip = 6;
-  google.protobuf.Timestamp last_active = 7;
+  uint32 last_active_seconds = 7;
   string location = 8;
   bool is_current = 9;
 }
@@ -3435,13 +3420,19 @@ message DirectFcmProto {
   string channel_id = 4;
   string sender_id = 5;
   string avatar = 6;
-	string clan_id = 7;
-	string attachments = 8;
-	string display_name = 9;
-	int32 create_time_seconds = 10;
-	int32 update_time_seconds = 11;
+  string clan_id = 7;
+  string attachment_link = 8;
+  string display_name = 9;
+  int32 create_time_seconds = 10;
+  int32 update_time_seconds = 11;
   string username = 12;
-  string mentions = 13;
+  repeated string mention_ids = 13;
+  repeated int32 position_s = 14;
+  repeated int32 position_e = 15;
+  string attachment_type = 16;
+  bool has_more_attachment = 17;
+  repeated bool is_mention_role = 18;
+  string message_id = 19;
 }
 
 message MessageMentionList {
@@ -3454,4 +3445,16 @@ message MessageAttachmentList {
 
 message MessageRefList {
   repeated MessageRef refs = 1;
+}
+
+message MessageReactionList {
+  repeated MessageReaction reactions = 1;
+}
+
+message ListClanBadgeCountRequest {
+  string clan_id = 1;
+}
+
+message ListClanBadgeCountResponse {
+  int32 badge_count = 1;
 }

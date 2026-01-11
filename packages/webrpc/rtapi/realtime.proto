@@ -19,7 +19,6 @@ syntax = "proto3";
 
 package mezon.realtime;
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "api/api.proto";
 
@@ -424,9 +423,9 @@ message ChannelMessageAck {
   // Username of the message sender.
   string username = 4;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the message was created.
-  google.protobuf.Timestamp create_time = 5;
+  uint32 create_time_seconds = 5;
   // The UNIX time (for gRPC clients) or ISO string (for REST clients) when the message was last updated.
-  google.protobuf.Timestamp update_time = 6;
+  uint32 update_time_seconds = 6;
   // True if the message was persisted to the channel's history, false otherwise.
   google.protobuf.BoolValue persistent = 7;
   // The clan logo
@@ -542,9 +541,9 @@ message ChannelMessageRemove {
   //
   string topic_id = 7;
   // Message mention
-  string mentions = 8;
+  bytes mentions = 8;
   // Message reference
-  string references = 9;
+  bytes references = 9;
 }
 
 // A set of joins and leaves on a particular channel.
@@ -850,7 +849,7 @@ message ChannelCreatedEvent {
   // channel private
   int32 channel_private = 7;
   // channel type
-  google.protobuf.Int32Value channel_type = 8;
+  int32 channel_type = 8;
   // status
   int32 status = 9;
   // app id
@@ -1073,7 +1072,7 @@ message UserChannelAdded {
   //
   UserProfileRedis caller = 5;
   //
-  uint32 create_time_second = 6;
+  uint32 create_time_seconds = 6;
   //
   int32 active = 7;
 }
@@ -1413,6 +1412,8 @@ message ListDataSocket {
   api.StreamingChannelUserList stream_user_list = 64;
   api.ListClanUnreadMsgIndicatorRequest list_unread_msg_indicator_req = 65;
   api.ListClanUnreadMsgIndicatorResponse unread_msg_indicator = 66;
+  api.ListClanBadgeCountRequest list_clan_badge_count_req = 67;
+  api.ListClanBadgeCountResponse clan_badge_count = 68;
 }
 
 message MeetParticipantEvent {
@@ -1443,7 +1444,7 @@ message FcmDataPayload {
 	int32 command_type = 1;
 	string receiver_id = 2;
 	string title = 3;
-	string body = 4;
+	bytes body = 4;
 	repeated string user_role_ids = 5;
 	repeated string user_sent_ids = 6;
 	int32 priority = 7;

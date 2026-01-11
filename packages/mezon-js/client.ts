@@ -15,7 +15,7 @@
  */
 
 import { create } from "@bufbuild/protobuf";
-import { createGrpcWebTransport } from "@connectrpc/connect-web";
+import { createConnectTransport } from "@connectrpc/connect-web";
 import {
   CallOptions,
   createClient,
@@ -49,7 +49,6 @@ import {
   ChangeChannelPrivateRequestSchema,
   ChannelDescription,
   ChannelDescList,
-  ChannelMessageHeader,
   ClanDesc,
   ClanEmojiCreateRequest,
   ClanEmojiCreateRequestSchema,
@@ -295,7 +294,6 @@ import {
   ChannelUserList,
   VoiceChannelUserList,
   ListChannelMessagesRequestSchema,
-  NotificationList,
   FriendList,
   UpdateChannelDescRequest,
   UpdateClanProfileRequest,
@@ -303,6 +301,7 @@ import {
   DeleteChannelDescRequest,
   ClanEmojiDeleteRequestSchema,
   ChannelDescListNoPool,
+  ChannelMessage,
 } from "./proto/gen/api/api_pb";
 import { DefaultSocket, Socket } from "./socket";
 import { WebSocketAdapter, WebSocketAdapterText } from "./web_socket_adapter";
@@ -317,6 +316,8 @@ import {
   ApiLoginIDResponse,
   ApiLoginRequest,
   ApiMessageRef,
+  ApiMessageReaction,
+  NotificationList,
 } from "./types";
 import { GatewayMezonApi } from "./gateway.api";
 import { safeJSONParse } from "./utils";
@@ -325,6 +326,8 @@ import {
   decodeMentions,
   decodeAttachments,
   decodeRefs,
+  decodeReactions,
+  decodeNotificationFcm,
 } from "mezon-js-protobuf";
 
 const DEFAULT_HOST = "127.0.0.1";
@@ -373,8 +376,8 @@ export enum WebrtcSignalingType {
 export class Client {
   /** The low level API client for Mezon server. */
   private readonly gatewayClient: GatewayMezonApi;
-  private readonly grpcTransport: Transport;
-  private readonly mezonClient: RPCClient<typeof MezonService>;
+  private grpcTransport: Transport;
+  private mezonClient: RPCClient<typeof MezonService>;
 
   /** thre refreshTokenPromise */
   private refreshTokenPromise: Promise<Session> | null = null;
@@ -402,7 +405,7 @@ export class Client {
       basePath
     );
 
-    this.grpcTransport = createGrpcWebTransport({
+    this.grpcTransport = createConnectTransport({
       baseUrl: basePath,
       useBinaryFormat: true,
     });
@@ -431,7 +434,13 @@ export class Client {
 
     const scheme = useSSL ? "https://" : "http://";
     const basePath = `${scheme}${host}:${port}`;
-    return this.gatewayClient.setBasePath(basePath);
+    
+    this.gatewayClient.setBasePath(basePath);
+    this.grpcTransport = createConnectTransport({
+      baseUrl: basePath,
+      useBinaryFormat: true,
+    });
+    this.mezonClient = createClient(MezonService, this.grpcTransport);
   }
 
   //#region Mezon Gateway APIs
@@ -1484,6 +1493,7 @@ export class Client {
     if (channelMessageList.messages == null) {
       return response;
     }
+
     channelMessageList.messages!.forEach((m) => {
       var content, reactions, mentions, attachments, references;
       try {
@@ -1492,28 +1502,31 @@ export class Client {
         console.log("error parse content", e);
       }
       try {
-        reactions = safeJSONParse(m.reactions || "[]");
+        reactions =
+          (decodeReactions(m.reactions)
+            ?.reactions as unknown as ApiMessageReaction[]) ||
+          safeJSONParse((m.reactions as unknown as string) || "[]");
       } catch (e) {
         console.log("error parse reactions", e);
       }
       try {
         mentions =
           decodeMentions(m.mentions)?.mentions ||
-          safeJSONParse(m.mentions || "[]");
+          safeJSONParse((m.mentions as unknown as string) || "[]");
       } catch (e) {
         console.log("error parse mentions", e);
       }
       try {
         attachments =
           decodeAttachments(m.attachments)?.attachments ||
-          safeJSONParse(m.attachments || "[]");
+          safeJSONParse((m.attachments as unknown as string) || "[]");
       } catch (e) {
         console.log("error parse attachments", e);
       }
       try {
         references =
           (decodeRefs(m.references)?.refs as unknown as ApiMessageRef[]) ||
-          safeJSONParse(m.references || "[]");
+          safeJSONParse((m.references as unknown as string) || "[]");
       } catch (e) {
         console.log("error parse references", e);
       }
@@ -1537,8 +1550,6 @@ export class Client {
         reactions: reactions,
         references: references,
         clanId: m.clanId,
-        createTime: m.createTime?.seconds.toString() || "",
-        updateTime: m.updateTime?.seconds.toString() || "",
         createTimeSeconds: m.createTimeSeconds,
         updateTimeSeconds: m.updateTimeSeconds,
         hideEditted: m.hideEditted,
@@ -2237,14 +2248,66 @@ export class Client {
       headers: [["Authorization", "Bearer " + session.token]],
     };
 
-    const response = await this.mezonClient.listNotifications(
+    const notificationList = await this.mezonClient.listNotifications(
       listNotificationsRequest,
       options
     );
 
-    if (response.notifications == null) {
-      response.notifications = [];
+    const response: NotificationList = {
+      notifications: [],
+      cacheableCursor: notificationList.cacheableCursor,
+    };
+
+    if (notificationList.notifications == null) {
+      notificationList.notifications = [];
     }
+
+    notificationList.notifications!.forEach((n) => {
+      var content;
+      try {
+        content =
+          decodeNotificationFcm(n.content) ||
+          safeJSONParse((n.content as unknown as string) || "{}");
+      } catch (e) {
+        console.log("error parse content", e);
+      }
+
+      response.notifications!.push({
+        id: n.id,
+        clanId: n.clanId,
+        category: n.category,
+        content: {
+          title: content?.title,
+          link: content?.link,
+          content: content?.content,
+          channelId: content?.channel_id,
+          senderId: content?.sender_id,
+          avatar: content?.avatar,
+          clanId: content?.clan_id,
+          attachmentLink: content?.attachment_link,
+          displayName: content?.display_name,
+          createTimeSeconds: content?.create_time_seconds,
+          updateTimeSeconds: content?.update_time_seconds,
+          username: content?.username,
+          mentionIds: content?.mention_ids,
+          positionS: content?.position_s,
+          positionE: content?.position_e,
+          isMentionRole: content?.is_mention_role,
+          attachmentType: content?.attachment_type,
+          hasMoreAttachment: content?.has_more_attachment,
+          messageId: content?.message_id,
+        },
+        createTimeSeconds: n.createTimeSeconds,
+        channelId: n.channelId,
+        channelType: n.channelType,
+        avatarUrl: n.avatarUrl,
+        topicId: n.topicId,
+        code: n.code,
+        persistent: n.persistent,
+        senderId: n.senderId,
+        subject: n.subject,
+      });
+    });
 
     return response;
   }
@@ -3001,7 +3064,7 @@ export class Client {
   async createMessage2Inbox(
     session: Session,
     request: Message2InboxRequest
-  ): Promise<ChannelMessageHeader> {
+  ): Promise<ChannelMessage> {
     if (
       this.autoRefreshSession &&
       session.refreshToken &&
@@ -3026,7 +3089,7 @@ export class Client {
   async createPinMessage(
     session: Session,
     request: PinMessageRequest
-  ): Promise<ChannelMessageHeader> {
+  ): Promise<ChannelMessage> {
     if (
       this.autoRefreshSession &&
       session.refreshToken &&
@@ -5023,7 +5086,9 @@ export class Client {
       headers: [["Authorization", "Bearer " + session.token]],
     };
 
-    return await this.mezonClient.listSdTopic(listSdTopicRequest, options);
+    const response = this.mezonClient.listSdTopic(listSdTopicRequest, options);
+    console.log("listSdTopicresponse", response);
+    return response;
   }
 
   //**post sd topic */
